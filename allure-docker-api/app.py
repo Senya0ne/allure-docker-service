@@ -268,16 +268,30 @@ def generate_security_swagger_spec():
         LOGGER.error(str(ex))
 
 ### swagger specific ###
-SWAGGER_URL = '/allure-docker-service/swagger'
-API_URL = '/allure-docker-service/swagger.json'
+NATIVE_PREFIX = '/allure-docker-service'
+SWAGGER_ENDPOINT = '/swagger'
+SWAGGER_SPEC_FILE = '/swagger.json'
+
+SWAGGER_ENDPOINT_PATH = '{}{}'.format(NATIVE_PREFIX, SWAGGER_ENDPOINT)
+SWAGGER_SPEC = '{}{}'.format(NATIVE_PREFIX, SWAGGER_SPEC_FILE)
+
+if URL_PREFIX:
+    SWAGGER_ENDPOINT_PATH = '{}{}{}'.format(URL_PREFIX, NATIVE_PREFIX, SWAGGER_ENDPOINT)
+    SWAGGER_SPEC = '{}{}{}'.format(URL_PREFIX, NATIVE_PREFIX, SWAGGER_SPEC_FILE)
+
 SWAGGERUI_BLUEPRINT = get_swaggerui_blueprint(
-    base_url='{}{}'.format(URL_PREFIX, SWAGGER_URL),
-    api_url='{}{}'.format(URL_PREFIX, API_URL),
+    base_url=SWAGGER_ENDPOINT_PATH,
+    api_url=SWAGGER_SPEC,
     config={
         'app_name': "Allure Docker Service"
     }
 )
-app.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_URL)
+app.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix="/")
+app.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_ENDPOINT)
+app.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_ENDPOINT_PATH)
+if URL_PREFIX:
+    app.register_blueprint(SWAGGERUI_BLUEPRINT,
+        url_prefix='{}{}'.format(NATIVE_PREFIX, SWAGGER_ENDPOINT))
 ### end swagger specific ###
 
 ### Security Section
@@ -511,22 +525,6 @@ def refresh_endpoint():
         resp = jsonify(body)
         return resp, 400
 ### end Security Endpoints Section
-
-@app.route("/", strict_slashes=False)
-@app.route("/allure-docker-service", strict_slashes=False)
-def index_endpoint():
-    try:
-        url = '{}{}'.format(URL_PREFIX, SWAGGER_URL)
-        return render_template('index.html', url=url)
-    except Exception as ex:
-        body = {
-            'meta_data': {
-                'message' : str(ex)
-            }
-        }
-        resp = jsonify(body)
-        resp.status_code = 400
-        return resp
 
 @app.route("/swagger.json")
 @app.route("/allure-docker-service/swagger.json", strict_slashes=False)
